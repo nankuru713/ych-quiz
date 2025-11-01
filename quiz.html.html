@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YCHクイズアプリ 最終完全版</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .screen {
+            display: none;
+            padding: 20px;
+            min-height: 100vh;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .center {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        h2 {
+            font-size: 2rem;
+            color: white;
+            margin-bottom: 2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            color: #667eea;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .btn:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+        
+        .choice-btn {
+            display: block;
+            width: 100%;
+            max-width: 600px;
+            margin: 15px auto;
+            padding: 18px;
+            background: white;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            user-select: none;
+        }
+        
+        .choice-btn:hover {
+            background: #f0f7ff;
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateX(5px);
+        }
+        
+        #question-text {
+            color: white;
+            font-size: 1.3rem;
+            background: rgba(0,0,0,0.2);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        
+        .progress {
+            color: white;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            background: rgba(0,0,0,0.2);
+            padding: 10px 20px;
+            border-radius: 8px;
+            max-width: 200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .character-display {
+            background: rgba(255,255,255,0.95);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .character-image {
+            width: 100px;
+            height: 100px;
+            flex-shrink: 0;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+        
+        .character-message {
+            text-align: left;
+            font-size: 1rem;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .feedback-box {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .feedback-result {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .correct {
+            color: #10b981;
+        }
+        
+        .incorrect {
+            color: #ef4444;
+        }
+        
+        .explanation {
+            font-size: 1rem;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .result-summary {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        
+        .result-character-image {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 20px;
+            border-radius: 15px;
+            object-fit: cover;
+        }
+        
+        .score-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+            margin: 20px 0;
+        }
+        
+        .accuracy {
+            font-size: 1.2rem;
+            color: #666;
+            margin: 10px 0;
+        }
+        
+        .badge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .badge-item {
+            text-align: center;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .badge-icon {
+            font-size: 40px;
+            margin-bottom: 5px;
+        }
+        
+        .badge-name {
+            font-size: 0.8rem;
+            color: #666;
+            word-break: break-word;
+        }
+        
+        .button-group {
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .secondary-btn {
+            background: rgba(255,255,255,0.9);
+            color: #667eea;
+            margin: 5px;
+        }
+        
+        .confirm-box {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        
+        .confirm-item {
+            font-size: 1rem;
+            color: #333;
+            margin: 15px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .confirm-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .confirm-value {
+            font-size: 1.1rem;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .success-screen {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 20px auto;
+            max-width: 600px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            text-align: center;
+        }
+        
+        .success-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .character-select-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 30px auto;
+            max-width: 700px;
+        }
+        
+        .char-select-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .char-select-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .char-select-image {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 10px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+        
+        .char-select-name {
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 10px;
+        }
+        
+        .stats-display {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .stat-item {
+            margin: 15px 0;
+            font-size: 1rem;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .no-data {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- スタート画面 -->
+    <div id="start-screen" class="screen active center">
+        <h1>🎮 YCH<br>クイズアプリ</h1>
+        <p style="color: white; font-size: 1.2rem; margin-bottom: 2rem; margin-top: 2rem;">医療従事者向け学習プラットフォーム</p>
+        <button class="btn" id="btn-start-quiz" onclick="goToCharacterScreen()" style="font-size: 1.2rem; padding: 20px 40px;">クイズを始める ✨</button>
+        <button class="btn secondary-btn" id="btn-view-stats" onclick="goToStatsScreen()" style="font-size: 1.2rem; padding: 20px 40px; margin-top: 1rem;">📊 成績を見る</button>
+    </div>
+    
+    <!-- キャラクター選択画面 -->
+    <div id="character-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToStartScreen()">← ホームに戻る</button>
+        <h2>🧑‍⚕️ キャラクターを選択</h2>
+        <div class="character-select-grid">
+            <div class="char-select-card" onclick="selectCharacter('PT')">
+                <img class="char-select-image" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2beeab7a-d724-4b19-a8b8-148b61bc8d07.png" alt="PT">
+                <div class="char-select-name">PT<br>理学療法士</div>
+            </div>
+            <div class="char-select-card" onclick="selectCharacter('OT')">
+                <img class="char-select-image" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/8382b224-fad3-4d0e-a9c4-11a09b5f4586.png" alt="OT">
+                <div class="char-select-name">OT<br>作業療法士</div>
+            </div>
+            <div class="char-select-card" onclick="selectCharacter('ST')">
+                <img class="char-select-image" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/0aefa67f-a92d-4c08-9678-3ff89d0d0a90.png" alt="ST">
+                <div class="char-select-name">ST<br>言語聴覚士</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- レベル選択画面 -->
+    <div id="level-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToCharacterScreen()">← キャラクターに戻る</button>
+        <h2>📚 レベルを選択</h2>
+        <button class="btn" id="btn-level-1" onclick="selectLevel('初級')" style="width: 90%; max-width: 400px;">初級（基礎知識）</button>
+        <button class="btn" id="btn-level-2" onclick="selectLevel('中級')" style="width: 90%; max-width: 400px;">中級（応用技術）</button>
+        <button class="btn" id="btn-level-3" onclick="selectLevel('上級')" style="width: 90%; max-width: 400px;">上級（臨床判断）</button>
+    </div>
+    
+    <!-- クイズ画面 -->
+    <div id="quiz-screen" class="screen center">
+        <div class="progress" id="progress">1/5</div>
+        <h2 id="question-text"></h2>
+        <div id="choices-container"></div>
+    </div>
+    
+    <!-- フィードバック画面 -->
+    <div id="feedback-screen" class="screen center">
+        <div id="character-feedback" class="character-display"></div>
+        <div class="feedback-box">
+            <div class="feedback-result" id="feedback-result"></div>
+            <div class="explanation" id="explanation"></div>
+            <button class="btn" id="next-btn" onclick="nextQuestion()">次の問題へ</button>
+        </div>
+    </div>
+    
+    <!-- 結果画面 -->
+    <div id="result-screen" class="screen center">
+        <div class="result-summary">
+            <h2>🎉 クイズ完了！</h2>
+            <img id="result-char-image" class="result-character-image" src="" alt="キャラクター">
+            <div class="character-name" id="result-char-name"></div>
+            <div class="score-display" id="score-display">5/5</div>
+            <div class="accuracy" id="accuracy">正答率: 100%</div>
+            <div id="badge-display"></div>
+            <div class="stat-item" style="text-align: center;">難易度: <strong id="result-level"></strong></div>
+        </div>
+        <div class="button-group">
+            <button class="btn btn-danger" id="btn-submit" onclick="moveToConfirm()">📤 結果を送信</button>
+            <button class="btn secondary-btn" id="btn-home-from-result" onclick="goToStartScreen()">ホームに戻る</button>
+        </div>
+    </div>
+    
+    <!-- 確認画面 -->
+    <div id="confirm-screen" class="screen center">
+        <div class="confirm-box">
+            <h2>📋 結果を確認して送信</h2>
+            <div class="confirm-item">
+                <div class="confirm-label">キャラクター</div>
+                <div class="confirm-value" id="confirm-character">-</div>
+            </div>
+            <div class="confirm-item">
+                <div class="confirm-label">レベル</div>
+                <div class="confirm-value" id="confirm-level">-</div>
+            </div>
+            <div class="confirm-item">
+                <div class="confirm-label">正解数</div>
+                <div class="confirm-value" id="confirm-score">-</div>
+            </div>
+            <div class="confirm-item">
+                <div class="confirm-label">正答率</div>
+                <div class="confirm-value" id="confirm-accuracy">-</div>
+            </div>
+            <div class="confirm-item">
+                <div class="confirm-label">獲得バッジ</div>
+                <div class="confirm-value" id="confirm-badges">-</div>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-danger" id="btn-final-submit" onclick="finalSubmit()">✅ この内容で送信</button>
+                <button class="btn secondary-btn" id="btn-back-from-confirm" onclick="goToResultScreen()">← 戻る</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成功画面 -->
+    <div id="success-screen" class="screen center">
+        <div class="success-screen">
+            <div class="success-icon">✅</div>
+            <h2>送信完了！</h2>
+            <p style="font-size: 1rem; color: #666; margin: 20px 0;">
+                クイズ結果がスプレッドシートに<br>正常に保存されました。
+            </p>
+            <div style="margin: 20px 0; padding: 15px; background: #f0f7ff; border-radius: 8px;">
+                <p><strong id="success-character"></strong></p>
+                <p><strong id="success-level"></strong></p>
+                <p><strong id="success-score"></strong></p>
+                <p><strong id="success-accuracy"></strong></p>
+            </div>
+            <button class="btn" id="btn-new-quiz" onclick="goToStartScreen()">新しいクイズを開始</button>
+        </div>
+    </div>
+    
+    <!-- 成績画面 -->
+    <div id="stats-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToStartScreen()">← ホームに戻る</button>
+        <h2>📊 成績一覧</h2>
+        <div class="stats-display" id="stats-content"></div>
+        <div id="chart-container" class="chart-container" style="display:none;">
+            <canvas id="stats-chart"></canvas>
+        </div>
+    </div>
+    
+    <script>
+        // ========== グローバル設定 ==========
+        var gameState = {
+            character: null,
+            level: null,
+            score: 0,
+            currentQuestionIndex: 0,
+            questions: [],
+            answers: [],
+            accuracy: 0,
+            badges: [],
+            scriptUrl: 'https://script.google.com/macros/s/AKfycbwfQ53VADYoNNLDFkgdhgwbMz9NY8-M12H6OBmRMwpQ9KpCTzsW6vs4F-XxxIqq25A-/exec'
+        };
+        
+        // キャラクター情報
+        const characterInfo = {
+            'PT': {
+                name: '理学療法士',
+                image: 'https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2beeab7a-d724-4b19-a8b8-148b61bc8d07.png',
+                correct: '素晴らしい！運動療法の知識が定着していますね！',
+                incorrect: '次回は大丈夫です。一緒に学びを深めましょう！'
+            },
+            'OT': {
+                name: '作業療法士',
+                image: 'https://user-gen-media-assets.s3.amazonaws.com/seedream_images/8382b224-fad3-4d0e-a9c4-11a09b5f4586.png',
+                correct: '完璧です！日常生活動作の理解が進みましたね！',
+                incorrect: 'もう一度確認しましょう。あなたならできます！'
+            },
+            'ST': {
+                name: '言語聴覚士',
+                image: 'https://user-gen-media-assets.s3.amazonaws.com/seedream_images/0aefa67f-a92d-4c08-9678-3ff89d0d0a90.png',
+                correct: '良い回答です！言語聴覚の知識が増えています！',
+                incorrect: '大丈夫です。学習は繰り返しが大事ですよ！'
+            }
+        };
+        
+        // バッジデータ
+        const badges = [
+            { name: 'はじめの一歩', icon: '🎯', condition: function() { return true; } },
+            { name: '完璧主義者', icon: '🎖️', condition: function() { return gameState.accuracy === 100; } },
+            { name: 'ストリークマスター', icon: '⚡', condition: function() { return gameState.accuracy >= 80; } },
+            { name: 'スピードデーモン', icon: '🥇', condition: function() { return gameState.accuracy >= 90; } },
+            { name: '初級マスター', icon: '🏆', condition: function() { return gameState.level === '初級' && gameState.accuracy >= 80; } },
+            { name: '中級マスター', icon: '🎓', condition: function() { return gameState.level === '中級' && gameState.accuracy >= 80; } },
+            { name: 'PT専門家', icon: '👨‍⚕️', condition: function() { return gameState.character === 'PT' && gameState.accuracy >= 75; } },
+            { name: 'OT専門家', icon: '🎬', condition: function() { return gameState.character === 'OT' && gameState.accuracy >= 75; } }
+        ];
+        
+        // 問題データ
+        const allQuestions = {
+            初級: [
+                {q: "バイタルサインに含まれないのは？", c: ["体温","呼吸数","血糖値","脈拍"], a: 2, e: "バイタルサインは体温・呼吸数・脈拍・血圧を指します。血糖値は含まれません。"},
+                {q: "理学療法士の主な業務は？", c: ["運動療法","調剤","手術","診断"], a: 0, e: "運動療法と物理療法が理学療法士の主な業務です。"},
+                {q: "作業療法士が扱う領域は？", c: ["薬物療法","ADL訓練","放射線","栄養管理"], a: 1, e: "日常生活動作（ADL）の訓練と改善が作業療法士の専門です。"},
+                {q: "言語聴覚士の対象障害は？", c: ["整形外科","言語聴覚障害","内臓疾患","精神疾患"], a: 1, e: "言語聴覚障害の評価と治療が言語聴覚士の主な役割です。"},
+                {q: "QOLは何の略称か？", c: ["Quality of Learning","Quantity of Life","Quality of Life","Quick Operation Level"], a: 2, e: "QOLは生活の質（Quality of Life）を意味します。"}
+            ],
+            中級: [
+                {q: "トレンデレンブルグ歩行の原因は？", c: ["大腿四頭筋低下","中殿筋低下","下腿三頭筋低下","腸腰筋低下"], a: 1, e: "中殿筋の弱力により骨盤の支持が困難となり、トレンデレンブルグ歩行が生じます。"},
+                {q: "感覚統合療法の対象は？", c: ["高齢者","発達障害児","脳卒中","整形外科"], a: 1, e: "発達障害児の感覚処理能力の向上が感覚統合療法の目的です。"},
+                {q: "ファントム感覚への対処は？", c: ["放置","多感覚入力と心理的サポート","手術のみ","鎮痛薬のみ"], a: 1, e: "心理的・生理的アプローチの組み合わせが有効です。"},
+                {q: "拘縮予防の運動範囲は？", c: ["最小限","完全可動域内","強制的","評価後に決定"], a: 1, e: "関節の完全可動域内での運動が拘縮予防に最も有効です。"},
+                {q: "運動療法の特異性の原則は？", c: ["継続のみ","目標動作に特異的な訓練","段階的負荷","個人差のみ"], a: 1, e: "目標とする動作に特異的な訓練が最も効果的です。"}
+            ],
+            上級: [
+                {q: "BPSDアプローチで適切なのは？", c: ["薬物療法のみ","環境調整と個別対応","身体拘束","隔離"], a: 1, e: "BPSDには環境因子の調整と個別的ケアが重要です。"},
+                {q: "ニューロジェニックショックの特徴は？", c: ["頻脈と高血圧","徐脈と低血圧","頻脈と低血圧","徐脈と高血圧"], a: 1, e: "交感神経機能低下により徐脈と低血圧を呈します。"},
+                {q: "前頭葉症状で特徴的なのは？", c: ["記憶障害","言語障害","遂行機能障害","視覚障害"], a: 2, e: "計画立案・実行などの遂行機能障害が特徴的です。"},
+                {q: "重症筋無力症患者への配慮は？", c: ["過度負荷","易疲労性への配慮","強化訓練","継続的負荷"], a: 1, e: "易疲労性が特徴的で過度負荷は症状悪化を招きます。"},
+                {q: "ICFの意義は何か？", c: ["医学モデルのみ","生物心理社会的モデル","機能評価のみ","障害分類のみ"], a: 1, e: "ICFは人の機能と障害を包括的に評価する枠組みです。"}
+            ]
+        };
+        
+        // ========== ナビゲーション関数 ==========
+        function showScreen(screenId) {
+            try {
+                if (!screenId || typeof screenId !== 'string') {
+                    console.error('Invalid screen ID:', screenId);
+                    return;
+                }
+                document.querySelectorAll('.screen').forEach(function(s) {
+                    s.classList.remove('active');
+                });
+                var screen = document.getElementById(screenId);
+                if (screen) {
+                    screen.classList.add('active');
+                } else {
+                    console.error('Screen not found:', screenId);
+                }
+            } catch (error) {
+                console.error('Error in showScreen:', error);
+            }
+        }
+        
+        function goToStartScreen() { showScreen('start-screen'); }
+        function goToCharacterScreen() { showScreen('character-screen'); }
+        function goToLevelScreen() { showScreen('level-screen'); }
+        function goToResultScreen() { showScreen('result-screen'); }
+        function goToStatsScreen() { 
+            showScreen('stats-screen');
+            loadStats();
+        }
+        
+        // ========== キャラクター・レベル選択 ==========
+        function selectCharacter(char) {
+            try {
+                if (!char || !characterInfo[char]) {
+                    console.error('Invalid character:', char);
+                    return;
+                }
+                gameState.character = char;
+                goToLevelScreen();
+            } catch (error) {
+                console.error('Error in selectCharacter:', error);
+            }
+        }
+        
+        function selectLevel(level) {
+            try {
+                if (!level || !allQuestions[level]) {
+                    console.error('Invalid level:', level);
+                    return;
+                }
+                gameState.level = level;
+                gameState.score = 0;
+                gameState.currentQuestionIndex = 0;
+                gameState.answers = [];
+                gameState.badges = [];
+                
+                var levelQuestions = allQuestions[level];
+                var shuffled = shuffleArray(levelQuestions).slice(0, 5);
+                gameState.questions = shuffled;
+                
+                startQuiz();
+            } catch (error) {
+                console.error('Error in selectLevel:', error);
+            }
+        }
+        
+        // ========== クイズ実行 ==========
+        function startQuiz() {
+            try {
+                showScreen('quiz-screen');
+                showQuestion();
+            } catch (error) {
+                console.error('Error in startQuiz:', error);
+            }
+        }
+        
+        function showQuestion() {
+            try {
+                if (gameState.currentQuestionIndex >= gameState.questions.length) {
+                    calculateBadges();
+                    showResultScreen();
+                    return;
+                }
+                
+                var q = gameState.questions[gameState.currentQuestionIndex];
+                if (!q) {
+                    console.error('Question not found at index:', gameState.currentQuestionIndex);
+                    return;
+                }
+                
+                document.getElementById('progress').textContent = (gameState.currentQuestionIndex + 1) + '/5';
+                document.getElementById('question-text').textContent = q.q;
+                
+                var container = document.getElementById('choices-container');
+                if (!container) {
+                    console.error('Choices container not found');
+                    return;
+                }
+                container.innerHTML = '';
+                
+                q.c.forEach(function(choice, i) {
+                    var btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.textContent = choice;
+                    btn.onclick = function() {
+                        selectAnswer(i, q.a, q.e);
+                    };
+                    container.appendChild(btn);
+                });
+            } catch (error) {
+                console.error('Error in showQuestion:', error);
+            }
+        }
+        
+        function selectAnswer(selectedIndex, correctIndex, explanation) {
+            try {
+                var isCorrect = selectedIndex === correctIndex;
+                var q = gameState.questions[gameState.currentQuestionIndex];
+                
+                gameState.answers.push({
+                    question: q.q,
+                    selected: q.c[selectedIndex],
+                    correct: q.c[correctIndex],
+                    isCorrect: isCorrect
+                });
+                
+                if (isCorrect) {
+                    gameState.score++;
+                }
+                
+                var resultText = isCorrect ? '✓ 正解！' : '✗ 不正解';
+                var resultClass = isCorrect ? 'correct' : 'incorrect';
+                
+                var resultElement = document.getElementById('feedback-result');
+                if (resultElement) {
+                    resultElement.textContent = resultText;
+                    resultElement.className = 'feedback-result ' + resultClass;
+                }
+                
+                var explanationElement = document.getElementById('explanation');
+                if (explanationElement) {
+                    explanationElement.textContent = explanation;
+                }
+                
+                // キャラクターフィードバック
+                var charInfo = characterInfo[gameState.character];
+                if (charInfo) {
+                    var msg = isCorrect ? charInfo.correct : charInfo.incorrect;
+                    var feedbackHtml = '<img class="character-image" src="' + charInfo.image + '" alt="' + charInfo.name + '">' +
+                                     '<div class="character-message">' + msg + '</div>';
+                    var feedbackElement = document.getElementById('character-feedback');
+                    if (feedbackElement) {
+                        feedbackElement.innerHTML = feedbackHtml;
+                    }
+                }
+                
+                var nextBtn = document.getElementById('next-btn');
+                if (nextBtn) {
+                    if (gameState.currentQuestionIndex >= gameState.questions.length - 1) {
+                        nextBtn.textContent = '結果を見る';
+                        nextBtn.onclick = function() {
+                            gameState.currentQuestionIndex++;
+                            calculateBadges();
+                            showResultScreen();
+                        };
+                    } else {
+                        nextBtn.textContent = '次の問題へ';
+                        nextBtn.onclick = function() {
+                            gameState.currentQuestionIndex++;
+                            showQuestion();
+                            showScreen('quiz-screen');
+                        };
+                    }
+                }
+                
+                showScreen('feedback-screen');
+            } catch (error) {
+                console.error('Error in selectAnswer:', error);
+            }
+        }
+        
+        function nextQuestion() {
+            try {
+                gameState.currentQuestionIndex++;
+                showQuestion();
+                showScreen('quiz-screen');
+            } catch (error) {
+                console.error('Error in nextQuestion:', error);
+            }
+        }
+        
+        // ========== バッジ計算 ==========
+        function calculateBadges() {
+            try {
+                gameState.accuracy = Math.round((gameState.score / 5) * 100);
+                gameState.badges = [];
+                
+                badges.forEach(function(badge) {
+                    try {
+                        if (badge.condition()) {
+                            gameState.badges.push(badge);
+                        }
+                    } catch (e) {
+                        console.error('Error checking badge condition:', e);
+                    }
+                });
+            } catch (error) {
+                console.error('Error in calculateBadges:', error);
+            }
+        }
+        
+        // ========== 結果表示 ==========
+        function showResultScreen() {
+            try {
+                var charInfo = characterInfo[gameState.character];
+                if (charInfo) {
+                    var resultImage = document.getElementById('result-char-image');
+                    if (resultImage) {
+                        resultImage.src = charInfo.image;
+                        resultImage.alt = charInfo.name;
+                    }
+                    
+                    var charName = document.getElementById('result-char-name');
+                    if (charName) {
+                        charName.textContent = charInfo.name;
+                    }
+                }
+                
+                var scoreDisplay = document.getElementById('score-display');
+                if (scoreDisplay) {
+                    scoreDisplay.textContent = gameState.score + '/5';
+                }
+                
+                var accuracyDisplay = document.getElementById('accuracy');
+                if (accuracyDisplay) {
+                    accuracyDisplay.textContent = '正答率: ' + gameState.accuracy + '%';
+                }
+                
+                var levelDisplay = document.getElementById('result-level');
+                if (levelDisplay) {
+                    levelDisplay.textContent = gameState.level;
+                }
+                
+                var badgeHtml = '';
+                if (gameState.badges.length > 0) {
+                    badgeHtml = '<div class="badge-grid">';
+                    gameState.badges.forEach(function(badge) {
+                        badgeHtml += '<div class="badge-item"><div class="badge-icon">' + badge.icon + 
+                                   '</div><div class="badge-name">' + badge.name + '</div></div>';
+                    });
+                    badgeHtml += '</div>';
+                } else {
+                    badgeHtml = '<p style="color: #999;">バッジなし</p>';
+                }
+                var badgeDisplay = document.getElementById('badge-display');
+                if (badgeDisplay) {
+                    badgeDisplay.innerHTML = badgeHtml;
+                }
+                
+                showScreen('result-screen');
+            } catch (error) {
+                console.error('Error in showResultScreen:', error);
+            }
+        }
+        
+        function moveToConfirm() {
+            try {
+                document.getElementById('confirm-character').textContent = gameState.character;
+                document.getElementById('confirm-level').textContent = gameState.level;
+                document.getElementById('confirm-score').textContent = gameState.score + '/5';
+                document.getElementById('confirm-accuracy').textContent = gameState.accuracy + '%';
+                
+                var badgeText = gameState.badges.length > 0 ? 
+                    gameState.badges.map(function(b) { return b.name; }).join(', ') : 
+                    'なし';
+                document.getElementById('confirm-badges').textContent = badgeText;
+                
+                showScreen('confirm-screen');
+            } catch (error) {
+                console.error('Error in moveToConfirm:', error);
+            }
+        }
+        
+        // ========== スプレッドシート送信 ==========
+        function finalSubmit() {
+            try {
+                var badgeText = gameState.badges.length > 0 ? 
+                    gameState.badges.map(function(b) { return b.icon; }).join(' ') : 
+                    'なし';
+                
+                var params = '?character=' + encodeURIComponent(gameState.character) +
+                             '&level=' + encodeURIComponent(gameState.level) +
+                             '&score=' + encodeURIComponent(gameState.score + '/5') +
+                             '&accuracy=' + encodeURIComponent(gameState.accuracy + '%') +
+                             '&badges=' + encodeURIComponent(badgeText);
+                
+                fetch(gameState.scriptUrl + params, {
+                    method: 'GET'
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('Success:', data);
+                    saveToLocalStorage();
+                    showSuccessScreen();
+                })
+                .catch(function(error) {
+                    console.error('Fetch error:', error);
+                    saveToLocalStorage();
+                    showSuccessScreen();
+                });
+            } catch (error) {
+                console.error('Error in finalSubmit:', error);
+                alert('送信中にエラーが発生しました。もう一度お試しください。');
+            }
+        }
+        
+        // ========== ローカルストレージ ==========
+        function saveToLocalStorage() {
+            try {
+                var stats = JSON.parse(localStorage.getItem('ychQuizStats') || '[]');
+                stats.push({
+                    date: new Date().toLocaleString('ja-JP'),
+                    character: gameState.character,
+                    level: gameState.level,
+                    score: gameState.score,
+                    accuracy: gameState.accuracy,
+                    badges: gameState.badges.map(function(b) { return b.name; }).join(', ')
+                });
+                localStorage.setItem('ychQuizStats', JSON.stringify(stats));
+            } catch (error) {
+                console.error('Error in saveToLocalStorage:', error);
+            }
+        }
+        
+        function showSuccessScreen() {
+            try {
+                document.getElementById('success-character').textContent = '✓ キャラクター: ' + gameState.character;
+                document.getElementById('success-level').textContent = '✓ レベル: ' + gameState.level;
+                document.getElementById('success-score').textContent = '✓ 正解数: ' + gameState.score + '/5';
+                document.getElementById('success-accuracy').textContent = '✓ 正答率: ' + gameState.accuracy + '%';
+                
+                showScreen('success-screen');
+            } catch (error) {
+                console.error('Error in showSuccessScreen:', error);
+            }
+        }
+        
+        // ========== 成績表示 ==========
+        function loadStats() {
+            try {
+                var stats = JSON.parse(localStorage.getItem('ychQuizStats') || '[]');
+                var html = '';
+                
+                if (stats.length === 0) {
+                    html = '<p class="no-data">成績データがありません</p>';
+                } else {
+                    var totalAttempts = stats.length;
+                    var avgAccuracy = Math.round(stats.reduce(function(sum, s) { return sum + s.accuracy; }, 0) / stats.length);
+                    var uniqueBadges = new Set();
+                    stats.forEach(function(s) {
+                        if (s.badges && s.badges !== 'なし') {
+                            s.badges.split(', ').forEach(function(b) { uniqueBadges.add(b); });
+                        }
+                    });
+                    
+                    html += '<div class="stat-item"><strong>📊 統計情報</strong></div>' +
+                            '<div class="stat-item">実施回数: <strong>' + totalAttempts + '回</strong></div>' +
+                            '<div class="stat-item">平均正答率: <strong>' + avgAccuracy + '%</strong></div>' +
+                            '<div class="stat-item">獲得バッジ数: <strong>' + uniqueBadges.size + '個</strong></div>';
+                    
+                    if (stats.length > 1) {
+                        html += '<div id="chart-container" class="chart-container"><canvas id="stats-chart"></canvas></div>';
+                    }
+                    
+                    html += '<div class="stat-item" style="margin-top: 20px;"><strong>📋 詳細履歴</strong></div>';
+                    stats.reverse().forEach(function(stat, index) {
+                        html += '<div class="stat-item">' +
+                            '<strong>#' + (stats.length - index) + '</strong> | ' +
+                            stat.date + '<br>' +
+                            '🎯 ' + stat.character + ' | ' + stat.level + ' | ' +
+                            stat.score + ' | ' + stat.accuracy + '%<br>' +
+                            '🎖️ ' + (stat.badges || 'なし') +
+                            '</div>';
+                    });
+                    
+                    html += '<button class="btn btn-danger" onclick="clearStats()" style="margin-top: 20px;">🗑️ 成績をリセット</button>';
+                }
+                
+                var statsContent = document.getElementById('stats-content');
+                if (statsContent) {
+                    statsContent.innerHTML = html;
+                }
+                
+                if (stats.length > 1) {
+                    setTimeout(function() {
+                        drawChart(stats);
+                    }, 100);
+                }
+            } catch (error) {
+                console.error('Error in loadStats:', error);
+            }
+        }
+        
+        function drawChart(stats) {
+            try {
+                var ctx = document.getElementById('stats-chart');
+                if (!ctx) return;
+                
+                var labels = stats.map(function(_, i) { return '回' + (i + 1); });
+                var data = stats.map(function(s) { return s.accuracy; });
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '正答率の推移',
+                            data: data,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error in drawChart:', error);
+            }
+        }
+        
+        function clearStats() {
+            try {
+                if (confirm('成績をすべて削除してもよろしいですか？')) {
+                    localStorage.removeItem('ychQuizStats');
+                    loadStats();
+                }
+            } catch (error) {
+                console.error('Error in clearStats:', error);
+            }
+        }
+        
+        // ========== ユーティリティ ==========
+        function shuffleArray(array) {
+            var result = array.slice();
+            for (var i = result.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var temp = result[i];
+                result[i] = result[j];
+                result[j] = temp;
+            }
+            return result;
+        }
+    </script>
+</body>
+</html>
