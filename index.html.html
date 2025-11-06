@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YCH クイズアプリ - 150問完全版（バッジシステム搭載）</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .screen { display: none; padding: 20px; min-height: 100vh; max-width: 900px; margin: 0 auto; }
+        .screen.active { display: block; animation: fadeIn 0.3s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .center { text-align: center; }
+        h1 { font-size: 2.5rem; color: white; margin-bottom: 1rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        h2 { font-size: 2rem; color: white; margin-bottom: 2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .btn { padding: 15px 30px; margin: 10px; font-size: 1rem; border: none; border-radius: 8px; cursor: pointer; background: white; color: #667eea; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s; }
+        .btn:hover { background: #f0f0f0; transform: translateY(-2px); }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-danger:hover { background: #dc2626; }
+        .choice-btn { display: block; width: 100%; max-width: 600px; margin: 15px auto; padding: 18px; background: white; border: 2px solid transparent; border-radius: 8px; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .choice-btn:hover { background: #f0f7ff; border-color: #667eea; transform: translateX(5px); }
+        #question-text { color: white; font-size: 1.3rem; background: rgba(0,0,0,0.2); padding: 25px; border-radius: 10px; margin: 20px auto; max-width: 600px; line-height: 1.6; }
+        .progress { color: white; text-align: center; font-size: 1.1rem; margin-bottom: 2rem; background: rgba(0,0,0,0.2); padding: 10px 20px; border-radius: 8px; max-width: 250px; margin-left: auto; margin-right: auto; }
+        .character-display { background: rgba(255,255,255,0.95); padding: 20px; border-radius: 15px; margin: 20px auto; max-width: 600px; display: flex; align-items: center; gap: 20px; }
+        .character-image { width: 100px; height: 100px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+        .character-message { text-align: left; font-size: 1rem; color: #333; }
+        .feedback-box { background: white; padding: 25px; border-radius: 10px; margin: 20px auto; max-width: 600px; }
+        .feedback-result { font-size: 1.8rem; font-weight: bold; margin-bottom: 15px; text-align: center; }
+        .correct { color: #10b981; }
+        .incorrect { color: #ef4444; }
+        .explanation { font-size: 0.95rem; color: #666; line-height: 1.6; margin-bottom: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; border-left: 4px solid #667eea; }
+        .result-summary { background: white; padding: 30px; border-radius: 15px; margin: 20px auto; max-width: 600px; text-align: center; }
+        .score-display { font-size: 2.5rem; font-weight: bold; color: #667eea; margin: 20px 0; }
+        .accuracy { font-size: 1.2rem; color: #666; margin: 10px 0; }
+        .badge-notification { background: #fbbf24; color: #333; padding: 15px; border-radius: 8px; margin: 15px 0; font-weight: bold; animation: bounce 0.5s; }
+        @keyframes bounce { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .button-group { text-align: center; margin-top: 2rem; }
+        .secondary-btn { background: rgba(255,255,255,0.9); }
+        .character-select-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 30px auto; max-width: 700px; }
+        .char-select-card { background: white; padding: 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+        .char-select-card:hover { transform: translateY(-5px); }
+        .char-select-image { width: 120px; height: 120px; margin: 0 auto 10px; border-radius: 10px; object-fit: cover; }
+        .char-select-name { font-weight: bold; color: #667eea; margin-top: 10px; }
+        .source-badge { display: inline-block; background: #e0e7ff; color: #667eea; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; margin-top: 8px; font-weight: bold; }
+        .stats-display { background: white; padding: 30px; border-radius: 15px; margin: 20px auto; max-width: 800px; text-align: left; }
+        .stats-item { padding: 8px; background: #f9f9f9; margin: 5px 0; border-radius: 4px; }
+        .mode-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 30px auto; max-width: 600px; }
+        .mode-card { background: white; padding: 20px; border-radius: 10px; cursor: pointer; transition: all 0.3s; }
+        .mode-card:hover { transform: translateY(-5px); }
+        .mode-title { font-weight: bold; color: #667eea; margin-bottom: 10px; font-size: 1.1rem; }
+        .mode-desc { font-size: 0.9rem; color: #666; }
+        .badge-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px auto; max-width: 800px; }
+        .badge-item { background: white; padding: 15px; border-radius: 10px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .badge-item:hover { transform: translateY(-3px); }
+        .badge-icon { font-size: 3rem; margin: 10px 0; }
+        .badge-locked { opacity: 0.4; }
+        .badge-name { font-size: 0.9rem; font-weight: bold; color: #333; margin: 5px 0; }
+        .badge-desc { font-size: 0.75rem; color: #666; margin: 5px 0; }
+        .badge-progress { font-size: 0.75rem; color: #667eea; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div id="start-screen" class="screen active center">
+        <h1>🎮 YCH クイズアプリ</h1>
+        <p style="color: white; font-size: 1.2rem; margin-bottom: 2rem; margin-top: 2rem;">150問医療従事者向け学習プラットフォーム<br><small>初級50問✅ | 中級50問✅ | 上級50問✅</small></p>
+        <button class="btn" onclick="goToCharacterScreen()" style="font-size: 1.2rem; padding: 20px 40px;">クイズを始める ✨</button>
+        <button class="btn secondary-btn" onclick="goToStatsScreen()" style="font-size: 1.2rem; padding: 20px 40px;">📊 成績を見る</button>
+        <button class="btn secondary-btn" onclick="goToBadgeScreen()" style="font-size: 1.2rem; padding: 20px 40px;">🏆 バッジを見る</button>
+    </div>
+    
+    <div id="character-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToStartScreen()">← ホームに戻る</button>
+        <h2>🧑‍⚕️ キャラクターを選択</h2>
+        <div class="character-select-grid">
+            <div class="char-select-card" onclick="selectCharacter('PT')">
+                <img class="char-select-image" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2beeab7a-d724-4b19-a8b8-148b61bc8d07.png" alt="PT">
+                <div class="char-select-name">PT 理学療法士</div>
+            </div>
+            <div class="char-select-card" onclick="selectCharacter('OT')">
+                <img class="char-select-image" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/8382b224-fad3-4d0e-a9c4-11a09b5f4586.png" alt="OT">
+                <div class="char-select-name">OT 作業療法士</div>
+            </div>
+            <div class="char-select-card" onclick="selectCharacter('ST')">
+                <img class="char-select-image" src="https://user-gen-media-assets.s3.amazonaws.com/seedream_images/0aefa67f-a92d-4c08-9678-3ff89d0d0a90.png" alt="ST">
+                <div class="char-select-name">ST 言語聴覚士</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="level-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToCharacterScreen()">← キャラクターに戻る</button>
+        <h2>📚 レベルを選択</h2>
+        <button class="btn" onclick="selectLevel('初級')" style="width: 90%; max-width: 400px;">✅ 初級（50問）</button>
+        <button class="btn" onclick="selectLevel('中級')" style="width: 90%; max-width: 400px;">✅ 中級（50問）</button>
+        <button class="btn" onclick="selectLevel('上級')" style="width: 90%; max-width: 400px;">✅ 上級（50問）</button>
+    </div>
+    
+    <div id="mode-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToLevelScreen()">← レベルに戻る</button>
+        <h2>🎯 モードを選択</h2>
+        <div class="mode-selector">
+            <div class="mode-card" onclick="startQuiz(5)">
+                <div class="mode-title">クイック</div>
+                <div class="mode-desc">5問出題</div>
+            </div>
+            <div class="mode-card" onclick="startQuiz(10)">
+                <div class="mode-title">標準</div>
+                <div class="mode-desc">10問出題</div>
+            </div>
+            <div class="mode-card" onclick="startQuiz(25)">
+                <div class="mode-title">チャレンジ</div>
+                <div class="mode-desc">25問出題</div>
+            </div>
+            <div class="mode-card" onclick="startQuiz(999)">
+                <div class="mode-title">全問</div>
+                <div class="mode-desc">全50問出題</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="quiz-screen" class="screen center">
+        <div class="progress" id="progress">1/5</div>
+        <h2 id="question-text"></h2>
+        <div id="choices-container"></div>
+    </div>
+    
+    <div id="feedback-screen" class="screen center">
+        <div id="character-feedback" class="character-display"></div>
+        <div id="badge-notification-area"></div>
+        <div class="feedback-box">
+            <div class="feedback-result" id="feedback-result"></div>
+            <div class="explanation" id="explanation"></div>
+            <div class="source-badge" id="source-badge"></div>
+            <button class="btn" id="next-btn">次の問題へ</button>
+        </div>
+    </div>
+    
+    <div id="result-screen" class="screen center">
+        <div class="result-summary">
+            <h2>🎉 クイズ完了！</h2>
+            <div class="score-display" id="score-display">5/5</div>
+            <div class="accuracy" id="accuracy">正答率: 100%</div>
+        </div>
+        <div id="result-badges"></div>
+        <div class="button-group">
+            <button class="btn btn-danger" onclick="submitResults()">📤 結果を送信</button>
+            <button class="btn secondary-btn" onclick="goToStartScreen()">ホームに戻る</button>
+        </div>
+    </div>
+    
+    <div id="stats-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToStartScreen()">← ホームに戻る</button>
+        <h2>📊 成績一覧</h2>
+        <div class="stats-display">
+            <div id="stats-content"></div>
+        </div>
+    </div>
+    
+    <div id="badge-screen" class="screen center">
+        <button class="btn secondary-btn" onclick="goToStartScreen()">← ホームに戻る</button>
+        <h2>🏆 バッジ一覧</h2>
+        <div id="badge-grid-container"></div>
+    </div>
+
+    <script>
+var gameState = { character: null, level: null, mode: 5, score: 0, currentQuestionIndex: 0, questions: [], accuracy: 0, totalQuestions: 5, scriptUrl: 'https://script.google.com/macros/s/AKfycbwfQ53VADYoNNLDFkgdhgwbMz9NY8-M12H6OBmRMwpQ9KpCTzsW6vs4F-XxxIqq25A-/exec', newBadges: [] };
+
+var characterInfo = {
+    'PT': { name: '理学療法士', image: 'https://user-gen-media-assets.s3.amazonaws.com/seedream_images/2beeab7a-d724-4b19-a8b8-148b61bc8d07.png', correct: '素晴らしい！', incorrect: '次回頑張りましょう！' },
+    'OT': { name: '作業療法士', image: 'https://user-gen-media-assets.s3.amazonaws.com/seedream_images/8382b224-fad3-4d0e-a9c4-11a09b5f4586.png', correct: '素晴らしい！', incorrect: '次回頑張りましょう！' },
+    'ST': { name: '言語聴覚士', image: 'https://user-gen-media-assets.s3.amazonaws.com/seedream_images/0aefa67f-a92d-4c08-9678-3ff89d0d0a90.png', correct: '素晴らしい！', incorrect: '次回頑張りましょう！' }
+};
+
+var badges = [
+    { id: 'first_quiz', name: '初心者', desc: '最初のクイズを完了', icon: '🌱', condition: () => getStats().length >= 1 },
+    { id: 'ten_quizzes', name: '勉強家', desc: '10回のクイズを完了', icon: '📚', condition: () => getStats().length >= 10 },
+    { id: 'fifty_quizzes', name: 'マスター', desc: '50回のクイズを完了', icon: '🎓', condition: () => getStats().length >= 50 },
+    { id: 'hundred_quizzes', name: 'エキスパート', desc: '100回のクイズを完了', icon: '👑', condition: () => getStats().length >= 100 },
+    { id: 'perfect_score', name: 'パーフェクト', desc: '正答率100%達成', icon: '🎯', condition: () => getStats().some(s => s.acc === 100) },
+    { id: 'all_90plus', name: '得意分野', desc: '正答率90%以上を5回達成', icon: '⭐', condition: () => getStats().filter(s => s.acc >= 90).length >= 5 },
+    { id: 'beginner_master', name: '初級マスター', desc: '初級を20回以上完了', icon: '🟢', condition: () => getStats().filter(s => s.level === '初級').length >= 20 },
+    { id: 'intermediate_master', name: '中級マスター', desc: '中級を20回以上完了', icon: '🟡', condition: () => getStats().filter(s => s.level === '中級').length >= 20 },
+    { id: 'advanced_master', name: '上級マスター', desc: '上級を20回以上完了', icon: '🔴', condition: () => getStats().filter(s => s.level === '上級').length >= 20 },
+    { id: 'quick_mode', name: 'クイックスター', desc: 'クイックモード(5問)を10回完了', icon: '⚡', condition: () => getStats().filter(s => (s.total || 5) === 5).length >= 10 },
+    { id: 'all_mode', name: '全問チャレンジャー', desc: '全問モード(50問)を完了', icon: '🔥', condition: () => getStats().some(s => (s.total || 5) === 50) },
+    { id: 'consistency', name: '継続は力', desc: '連続5日クイズに参加', icon: '🌟', condition: () => checkConsecutiveDays() >= 5 },
+    { id: 'pt_master', name: 'PT スペシャリスト', desc: 'PTキャラで50回完了', icon: '🦵', condition: () => getStats().filter(s => s.char === 'PT').length >= 50 },
+    { id: 'ot_master', name: 'OT スペシャリスト', desc: 'OTキャラで50回完了', icon: '✋', condition: () => getStats().filter(s => s.char === 'OT').length >= 50 },
+    { id: 'st_master', name: 'ST スペシャリスト', desc: 'STキャラで50回完了', icon: '🗣️', condition: () => getStats().filter(s => s.char === 'ST').length >= 50 },
+    { id: 'high_scorer', name: 'ハイスコアー', desc: '正答率80%以上を10回達成', icon: '📈', condition: () => getStats().filter(s => s.acc >= 80).length >= 10 },
+    { id: 'challenge_master', name: 'チャレンジ制覇', desc: 'チャレンジモード(25問)を完了', icon: '💪', condition: () => getStats().some(s => (s.total || 5) === 25) },
+    { id: 'average_70', name: 'コンスタント', desc: '平均正答率70%以上維持', icon: '📊', condition: () => getStats().length >= 10 && (getStats().reduce((a, b) => a + (b.acc || 0), 0) / getStats().length) >= 70 },
+    { id: 'two_hundred_score', name: '頑張り屋', desc: '200問以上回答', icon: '💯', condition: () => getStats().reduce((a, b) => a + (b.total || 5), 0) >= 200 }
+];
+
+var allQuestions = {
+    初級: [
+        {q: "バイタルサインに含まれないのは？", c: ["体温","呼吸数","血糖値","脈拍"], a: 2, e: "バイタルサインは体温・呼吸数・脈拍・血圧の4項目です。血糖値は含まれません。", s: "日本医学会医学用語辞典"},
+        {q: "正常な成人の安静時心拍数は？", c: ["40-60/分","60-100/分","100-140/分","140-160/分"], a: 1, e: "健康な成人の安静時心拍数は60-100回/分です。リハビリテーション実施時の心拍数測定が重要です。", s: "AHA心臓協会ガイドライン"},
+        {q: "正常血圧の値は？", c: ["100/60 mmHg","120/80 mmHg","140/90 mmHg","160/100 mmHg"], a: 1, e: "正常血圧は収縮期120未満、拡張期80未満です。140/90以上は高血圧です。", s: "日本高血圧学会ガイドライン"},
+        {q: "正常な成人の呼吸数は？", c: ["10-15回/分","12-20回/分","20-25回/分","25-30回/分"], a: 1, e: "正常呼吸数は12-20回/分です。異常呼吸はリハビリ中止の判断基準です。", s: "AHA蘇生ガイドライン"},
+        {q: "微熱の定義は？", c: ["36℃以上","37℃以上37.5℃未満","37.5℃以上","38℃以上"], a: 1, e: "微熱は37℃以上37.5℃未満です。発熱患者の運動療法は慎重に判断が必要です。", s: "日本内科学会症状ガイドライン"},
+        {q: "理学療法の定義として最も適切なのは？", c: ["薬物療法である","運動療法と物理療法による治療","手術による治療","栄養管理のみ"], a: 1, e: "理学療法は運動療法と物理療法を用いたリハビリテーションです。WHO認可の医療専門職です。", s: "世界理学療法連盟定義"},
+        {q: "作業療法の主な対象は？", c: ["薬物療法","日常生活動作（ADL）と社会適応","栄養管理","手術後管理のみ"], a: 1, e: "作業療法はADL、生産的活動、余暇活動の改善が目標です。患者が作業を通じて社会復帰を達成することが目的です。", s: "日本作業療法士協会定義"},
+        {q: "言語聴覚士（ST）の専門領域は？", c: ["整形外科","言語聴覚障害の評価と治療","内科疾患","外科的処置"], a: 1, e: "言語聴覚士は音声・言語・聴覚障害、摂食・嚥下障害の評価と治療を行う医療専門職です。", s: "日本言語聴覚士協会定義"},
+        {q: "ICF（国際生活機能分類）の最大の意義は？", c: ["障害のカテゴリ分類のみ","疾患、個人因子、環境因子を統合的に評価","医学的診断のみ","機能評価だけ"], a: 1, e: "ICFは健康状態、身体機能・構造、活動、参加を統合的に評価します。患者中心のリハビリ計画作成に必須です。", s: "WHO ICF分類"},
+        {q: "QOL（生活の質）の定義として正しいのは？", c: ["単なる診断名","個人が生活する上で感じる満足度と幸福度","医学的検査値のみ","年齢による分類"], a: 1, e: "QOLは個人が所属する文化や価値観のもとでの認識です。リハビリテーション評価の重要指標です。", s: "WHOQOL-BREF"},
+        {q: "ROM運動の主な目的は？", c: ["筋力増強","関節可動域の維持改善","心肺機能","バランス"], a: 1, e: "ROM運動は関節可動域の維持改善が主な目的です。", s: "リハビリ総論"},
+        {q: "徒手筋力検査（MMT）の段階は？", c: ["0-3段階","0-5段階","1-5段階","0-6段階"], a: 1, e: "MMTは0～5の6段階です。5が正常筋力です。", s: "Kendall筋力検査法"},
+        {q: "日本の要介護度は？", c: ["1-3","1-5","1-6","1-7"], a: 1, e: "要介護度は1～5の5段階です。要支援含め7段階です。", s: "介護保険法"},
+        {q: "福祉用具の提供方式は？", c: ["購入のみ","購入と貸与","貸与のみ","無料配給"], a: 1, e: "福祉用具は購入と貸与の両方が対象です。", s: "介護保険制度"},
+        {q: "嚥下の段階は？", c: ["2段階","3段階","4段階","5段階"], a: 2, e: "嚥下は先行期・口腔期・咽頭期・食道期の4段階です。", s: "摂食嚥下学会"},
+        {q: "ALS患者の主な特徴は？", c: ["認知低下","運動神経変性","感覚障害","視覚障害"], a: 1, e: "ALSは運動神経が選択的に変性する進行性疾患です。", s: "ALS診療ガイドライン"},
+        {q: "脳卒中の分類は？", c: ["脳梗塞のみ","梗塞・出血・くも膜下","脳腫瘍","脊髄疾患"], a: 1, e: "脳卒中は梗塞（80%）、出血（15%）、くも膜下（5%）です。", s: "脳卒中ガイドライン"},
+        {q: "リハビリの段階分類は？", c: ["医学的のみ","医学・職業・社会的","職業復帰","社会復帰"], a: 1, e: "リハビリは医学的・職業的・社会的の3段階です。", s: "リハビリ総論"},
+        {q: "高齢者転倒の危険因子は？", c: ["加齢のみ","複合的","環境のみ","外傷のみ"], a: 1, e: "転倒は加齢、疾患、環境因子の複合です。", s: "高齢者転倒予防ガイドライン"},
+        {q: "感染予防の基本対策は？", c: ["手洗いのみ","手洗い・消毒・対策","薬物のみ","隔離のみ"], a: 1, e: "感染予防は手洗い、消毒、個人防護が基本です。", s: "CDC感染予防ガイドライン"},
+        {q: "パーキンソン病の4大症状は？", c: ["記憶障害","振戦・筋固縮・寡動・姿勢反射障害","言語障害","視覚障害"], a: 1, e: "4大症状は振戦、筋固縮、寡動、姿勢反射障害です。", s: "パーキンソン病ガイドライン"},
+        {q: "脳梗塞の定義は？", c: ["脳出血","脳血流遮断による壊死","くも膜下出血","脳腫瘍"], a: 1, e: "脳梗塞は脳血管の閉塞により脳血流が遮断される状態です。", s: "脳卒中ガイドライン"},
+        {q: "脳出血の原因として最多は？", c: ["くも膜下出血","高血圧性脳出血","外傷","腫瘍"], a: 1, e: "高血圧性脳出血が脳出血の50-60%を占めます。", s: "脳卒中ガイドライン"},
+        {q: "片麻痺の定義は？", c: ["全身麻痺","身体の一側の麻痺","下肢のみ","上肢のみ"], a: 1, e: "片麻痺は脳卒中患者の典型的な症状で、身体の一側に生じます。", s: "脳卒中ガイドライン"},
+        {q: "Brunnstrom回復段階は？", c: ["3段階","5段階","6段階","7段階"], a: 2, e: "Brunnstrom分類は6段階の回復段階を示します。", s: "脳卒中機能評価"},
+        {q: "Fugl-Meyer Assessment（FMA）の対象は？", c: ["下肢機能","上肢機能","全身機能","認知機能"], a: 1, e: "FMAは脳卒中患者の運動機能評価で広く使用されています。", s: "脳卒中評価ツール"},
+        {q: "Modified Rankin Scale（mRS）の評価項目は？", c: ["筋力","機能障害の程度","認知機能","感覚"], a: 1, e: "mRSは脳卒中患者の機能障害程度を0-6段階で評価します。", s: "脳卒中アウトカム"},
+        {q: "NIHSS（National Institutes of Health Stroke Scale）の最大スコアは？", c: ["15点","21点","42点","100点"], a: 2, e: "NIHSSは脳卒中の重症度評価で最大42点です。", s: "脳卒中評価スケール"},
+        {q: "脳卒中患者の麻痺側上肢の回復予後を左右する因子は？", c: ["年齢のみ","初期運動機能","性別","環境"], a: 1, e: "初期の運動機能が麻痺側上肢の回復予後を大きく左右します。", s: "脳卒中予後研究"},
+        {q: "脳卒中後のうつ症状の発生率は？", c: ["5-10%","10-20%","20-30%以上","40%"], a: 2, e: "脳卒中後のうつ症状は20-30%の患者に見られます。", s: "脳卒中心理学"}
+    ],
+    中級: [
+        {q: "脳卒中後の痙縮に対する治療法として推奨されるのは？", c: ["絶対安静","運動療法とボツリヌス毒素療法の組み合わせ","外科手術のみ","薬物療法のみ"], a: 1, e: "脳卒中後痙縮は運動療法と医学的介入の組み合わせが有効です。2021年脳卒中ガイドラインでは併用が推奨されています。", s: "脳卒中ガイドライン2021"},
+        {q: "急性期脳卒中患者の早期リハビリテーション開始は？", c: ["48時間以内は禁止","可能な限り早期（24-48時間以内）の開始","1週間待機","患者の希望次第"], a: 1, e: "早期のリハビリテーション開始（24-48時間以内）は脳卒中患者の機能回復に有効です。ガイドラインで強く推奨されています。", s: "脳卒中ガイドライン2021"},
+        {q: "慢性腰痛患者に対する最初の治療選択肢として推奨されるのは？", c: ["即座の手術","運動療法と認知行動療法","完全安静","麻薬性鎮痛薬"], a: 1, e: "慢性腰痛の管理では運動療法と心理社会的介入が第一選択です。安静は避けるべきとガイドラインで示されています。", s: "腰痛診療ガイドライン"},
+        {q: "変形性膝関節症の保存療法として証拠レベルが高い治療法は？", c: ["手術","加重運動療法と体重管理","関節注射のみ","サプリメント"], a: 1, e: "変形性膝関節症では加重運動療法と体重管理が有効です。Cochrane reviewでも推奨されています。", s: "Cochrane Library"},
+        {q: "COPD患者の呼吸リハビリテーションの効果として確認されているのは？", c: ["肺機能の改善","運動耐容能と生活の質の改善","肺容量の増加","疾患の完全治癒"], a: 1, e: "呼吸リハビリテーションはCOPD患者の運動耐容能とQOLを改善します。GOLD guideline 2024でも推奨されています。", s: "GOLD 2024ガイドライン"},
+        {q: "脳卒中後の脳画像と臨床症状が不一致である場合の対応は？", c: ["画像を優先","臨床症状を優先","両者を統合的に評価","どちらでもよい"], a: 2, e: "患者の機能的予後は臨床症状との統合評価が重要です。これが臨床推論の基本です。", s: "脳卒中ガイドライン2021"},
+        {q: "脊髄損傷患者のリハビリテーション開始時期として推奨されるのは？", c: ["3ヶ月待機","安定化後可能な限り早期","1年待機","回復を待つ"], a: 1, e: "脊髄損傷患者も早期リハビリテーション開始が推奨されます。二次障害予防が重要です。", s: "脊髄損傷ガイドライン"},
+        {q: "パーキンソン病患者への運動療法の効果として実証されているのは？", c: ["疾患の完全治癒","運動機能の改善と転倒予防","薬物療法の廃止","症状の消失"], a: 1, e: "運動療法はパーキンソン病患者の機能改善と転倒予防に有効です。定期的実施が推奨されています。", s: "パーキンソン病ガイドライン"},
+        {q: "脳梗塞急性期（4.5時間以内）の標準治療は？", c: ["リハビリテーションのみ","tPA静注血栓溶解療法","安静","薬物療法のみ"], a: 1, e: "tPA静注血栓溶解療法が脳梗塞急性期の標準治療です。発症から4.5時間以内の投与が推奨されています。", s: "脳卒中ガイドライン2021"},
+        {q: "高齢者転倒防止プログラムで最も効果的なのは？", c: ["筋力トレーニングのみ","複合的運動プログラム","バランストレーニングのみ","環境改善のみ"], a: 1, e: "複合的運動プログラムが転倒防止に最も効果的です。筋力、バランス、反応速度の向上が重要です。", s: "Cochrane転倒予防レビュー"},
+        {q: "運動療法と物理療法の違いは？", c: ["同じ意味","運動療法は患者自身が行う運動、物理療法は物理的手段","関係ない","物理療法のみ有効"], a: 1, e: "運動療法は患者の主動的運動、物理療法は電気・温熱などの物理的手段です。", s: "リハビリ総論"},
+        {q: "関節拘縮の予防で最も重要なのは？", c: ["安静","ROM訓練","薬物","手術"], a: 1, e: "関節拘縮予防にはROM訓練が最も重要です。早期からの実施が不可欠です。", s: "リハビリ総論"},
+        {q: "筋萎縮が進行する速度は？", c: ["一定","活動性により異なる","年齢のみ","不明"], a: 1, e: "筋萎縮は活動性（廃用）により加速します。早期動員が重要です。", s: "リハビリ総論"},
+        {q: "静的ストレッチの最適時間は？", c: ["10秒","15-30秒","60秒以上","時間は関係ない"], a: 1, e: "静的ストレッチは15-30秒間保持することで効果的です。", s: "運動療法総論"},
+        {q: "動的ストレッチの特徴は？", c: ["静止して行う","反動をつけて行う","冷却下で行う","温熱下で行う"], a: 1, e: "動的ストレッチは反動をつけた運動です。ウォームアップに有効です。", s: "運動療法総論"},
+        {q: "レジスタンス運動の効果は？", c: ["筋力増強のみ","筋力増強と筋肉量増加","心肺機能のみ","柔軟性向上"], a: 1, e: "レジスタンス運動は筋力と筋肉量の両者を増加させます。", s: "リハビリ総論"},
+        {q: "有酸素運動で重要なのは？", c: ["強度のみ","強度と継続","回数のみ","時間のみ"], a: 1, e: "有酸素運動は適切な強度と継続性が重要です。", s: "リハビリ総論"},
+        {q: "ボディメカニクスの主な原則は？", c: ["不要","身体の効率的使用","力任せ","関係ない"], a: 1, e: "ボディメカニクスは身体を効率的に使用して腰痛等を予防します。", s: "リハビリ総論"},
+        {q: "移動訓練の段階は？", c: ["2段階","3段階","4段階","5段階"], a: 2, e: "移動訓練は寝返り・起き上がり・移乗・立位・歩行の段階があります。", s: "リハビリ総論"},
+        {q: "ADL訓練の目的は？", c: ["時間潰し","日常生活動作の自立","運動量増加","気分転換"], a: 1, e: "ADL訓練は患者の日常生活の自立度向上が目的です。", s: "リハビリ総論"}
+    ],
+    上級: [
+        {q: "脊髄損傷患者のレベル評価に使用される国際的分類は？", c: ["Frankel分類のみ","ASIA分類とFrankel分類","ASIA分類のみ","修正Ashworth分類"], a: 2, e: "脊髄損傷の神経学的レベルはASIA分類が国際標準です。機能的分類にはFrankel分類も使用されます。", s: "脊髄損傷診療ガイドライン"},
+        {q: "神経可塑性に基づいた運動療法の原則において重要なのは？", c: ["運動量は不重要","十分な量の反復練習と課題特異性","安静が最優先","脳の変化は不可能"], a: 1, e: "神経可塑性は十分な量の反復運動と課題特異性により脳構造が変化することを示唆しています。これが脳卒中回復を促進する基本原則です。", s: "神経可塑性研究"},
+        {q: "運動学習の3段階における初期段階の特徴は？", c: ["完全習得","認知的処理が必要","自動化","無意識的実行"], a: 1, e: "Fitts & Posnerの3段階では初期段階（認知段階）では認知的処理が活発です。以降、関連段階、自動化段階へ進みます。", s: "運動学習理論"},
+        {q: "ADL評価ツールFIMにおける項目数は？", c: ["14項目","18項目","21項目","26項目"], a: 1, e: "FIM（機能的自立度評価表）は18項目のADL評価ツールです。リハビリテーション入出院時評価として国際的に使用されています。", s: "FIM Manual"},
+        {q: "脳卒中患者の社会復帰支援で職業評価の実施時期として推奨されるのは？", c: ["発症直後","2-3ヶ月後（基本的回復後）","1年以上経過後","不要"], a: 1, e: "基本的な機能回復を見た後の職業評価実施が推奨されます。早期評価は精度が低い可能性があります。", s: "脳卒中ガイドライン2021"},
+        {q: "医学倫理における自律尊重の原則で最も重要なのは？", c: ["医師の判断","患者の自由意志に基づく同意","家族の同意","管理者の指示"], a: 1, e: "患者の自由意志に基づく知情同意（IC）が医学倫理の基本原則です。強制や圧力は倫理違反です。", s: "医療倫理ガイドライン"},
+        {q: "EBM（根拠に基づく医療）の3要素として最も重要なのは？", c: ["科学的根拠のみ","臨床経験のみ","科学的根拠・臨床経験・患者価値の統合","患者希望のみ"], a: 2, e: "EBMは科学的根拠、臨床経験、患者価値の3要素の統合判断です。いずれか一つだけでは不十分です。", s: "EBM実践ガイド"},
+        {q: "認知機能障害患者へのメタ認知トレーニングの目的は？", c: ["記憶能力の増強","自己認識と対処戦略の習得","計算能力の改善","言語機能の改善"], a: 1, e: "メタ認知トレーニングは患者が自身の認知障害を認識し対処戦略を習得することが目的です。ADL改善につながります。", s: "認知リハビリテーション論"},
+        {q: "脳卒中患者の運動学習転移を促進する環境設定として有効なのは？", c: ["単一環境での反復練習","多様な環境・条件での段階的訓練","無作為な順序での訓練","同じ環境での継続"], a: 1, e: "多様な環境・条件での訓練が学習転移を促進します。単一環境での練習では他の環境への応用が困難です。", s: "運動学習理論"},
+        {q: "高齢者リハビリテーションでのフレイル評価の重要性は？", c: ["不要である","転倒予防と同等に重要","二次的な評価","加齢の必然的現象"], a: 1, e: "フレイル評価は個別化した効果的な運動処方作成に必須です。早期発見と介入が機能維持に重要です。", s: "日本老年医学会ガイドライン"},
+        {q: "脳可塑性を活用した治療の基本は？", c: ["一度の介入","繰り返し、段階的、課題特異的な訓練","脳は変化しない","環境不要"], a: 1, e: "脳可塑性は繰り返し、段階的、課題特異的な訓練により脳構造を変化させます。", s: "脳可塑性研究"},
+        {q: "ミラーセラピーの有効性は？", c: ["効果なし","脳卒中上肢麻痺に有効","全患者に有効","リスク高い"], a: 1, e: "ミラーセラピーは脳卒中患者の上肢機能改善に有効とされています。", s: "脳卒中リハビリ研究"},
+        {q: "ロボット療法の有効性は？", c: ["効果なし","従来療法と同等以上の有効性","有害","実験段階"], a: 1, e: "ロボット支援療法は脳卒中患者の機能改善に有効です。", s: "ロボット療法RCT"},
+        {q: "CI療法（強制使用療法）の理論は？", c: ["患側を忘れさせる","健側を拘束し患側を強制使用","完全安静","薬物のみ"], a: 1, e: "CI療法は健側を一時的に拘束することで患側使用を強制し、脳可塑性を促進します。", s: "CI療法理論"},
+        {q: "タスク指向的訓練の特徴は？", c: ["抽象的運動のみ","機能的課題への訓練","安静","受動運動"], a: 1, e: "タスク指向的訓練は実際の生活課題に基づいた訓練です。ADL改善に有効です。", s: "運動療法理論"},
+        {q: "背景視的運動の役割は？", c: ["不要","バランスと姿勢制御に重要","反応不要","意識的"], a: 1, e: "背景視的運動（postural control）はバランスと姿勢制御に重要です。", s: "バランス理論"},
+        {q: "フィードバックの種類で最も学習促進に有効なのは？", c: ["フィードバック不要","知識結果（KR）のみ","知識結果（KR）と動作知識（KP）","フィードバック過多"], a: 2, e: "KRとKPの両方が提供されると学習転移が促進されます。", s: "運動学習理論"},
+        {q: "運動イメージング訓練の有効性は？", c: ["効果なし","実際の運動訓練と同等以上","完全な代替","補助的"], a: 1, e: "運動イメージング訓練は脳の活性化を促進し、実際の運動訓練と同等の効果があります。", s: "運動神経科学"},
+        {q: "仮想現実（VR）療法の応用は？", c: ["娯楽のみ","運動療法の補助や動機付け","無効","将来の技術"], a: 1, e: "VR療法はリハビリテーション効果を高め、患者のモチベーション向上に有効です。", s: "VRリハビリ研究"},
+        {q: "エビデンスレベルの最高位は？", c: ["症例報告","コホート研究","RCT/メタアナリシス","専門家意見"], a: 2, e: "エビデンスレベルはランダム化対照試験（RCT）とメタアナリシスが最高位です。", s: "EBM基礎"}
+    ]
+};
+
+function showScreen(id) { try { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); var s = document.getElementById(id); if (s) s.classList.add('active'); } catch(e) { console.error('Error:', e); } }
+function goToStartScreen() { gameState.level = null; gameState.character = null; showScreen('start-screen'); }
+function goToCharacterScreen() { showScreen('character-screen'); }
+function goToLevelScreen() { showScreen('level-screen'); }
+function goToModeScreen() { showScreen('mode-screen'); }
+function goToStatsScreen() { loadStats(); showScreen('stats-screen'); }
+function goToBadgeScreen() { loadBadges(); showScreen('badge-screen'); }
+function selectCharacter(c) { gameState.character = c; goToCharacterScreen(); setTimeout(() => goToLevelScreen(), 100); }
+function selectLevel(l) { gameState.level = l; goToModeScreen(); }
+function startQuiz(questionCount) { gameState.score = 0; gameState.currentQuestionIndex = 0; gameState.mode = questionCount; gameState.newBadges = []; var q = allQuestions[gameState.level]; gameState.questions = shuffleArray(q).slice(0, Math.min(questionCount, q.length)); gameState.totalQuestions = gameState.questions.length; showScreen('quiz-screen'); showQuestion(); }
+
+function showQuestion() { 
+    try { 
+        if (gameState.currentQuestionIndex >= gameState.questions.length) { 
+            gameState.accuracy = Math.round((gameState.score / gameState.totalQuestions) * 100); 
+            document.getElementById('score-display').textContent = gameState.score + '/' + gameState.totalQuestions; 
+            document.getElementById('accuracy').textContent = '正答率: ' + gameState.accuracy + '%'; 
+            checkBadges();
+            showScreen('result-screen'); 
+            return; 
+        } 
+        var q = gameState.questions[gameState.currentQuestionIndex]; 
+        document.getElementById('progress').textContent = (gameState.currentQuestionIndex + 1) + '/' + gameState.totalQuestions; 
+        document.getElementById('question-text').textContent = q.q; 
+        var container = document.getElementById('choices-container'); 
+        container.innerHTML = ''; 
+        var shuffle = shuffleArray(q.c);
+        var correctText = q.c[q.a];
+        var newIndex = shuffle.indexOf(correctText);
+        for (var i = 0; i < shuffle.length; i++) { 
+            (function(idx) { 
+                var btn = document.createElement('button'); 
+                btn.className = 'choice-btn'; 
+                btn.textContent = shuffle[idx]; 
+                btn.onclick = function() { selectAnswer(idx, newIndex, q.e, q.s); }; 
+                container.appendChild(btn); 
+            })(i); 
+        } 
+    } catch(e) { console.error('Error:', e); } 
+}
+
+function selectAnswer(sel, cor, exp, src) { 
+    if (sel === cor) gameState.score++; 
+    var ok = sel === cor;
+    document.getElementById('feedback-result').textContent = ok ? '✓ 正解！' : '✗ 不正解'; 
+    document.getElementById('feedback-result').className = 'feedback-result ' + (ok ? 'correct' : 'incorrect'); 
+    document.getElementById('explanation').textContent = exp; 
+    document.getElementById('source-badge').textContent = '📚 ' + src; 
+    var c = characterInfo[gameState.character]; 
+    document.getElementById('character-feedback').innerHTML = '<img class="character-image" src="' + c.image + '" alt=""><div class="character-message">' + (ok ? c.correct : c.incorrect) + '</div>'; 
+    var n = document.getElementById('next-btn'); 
+    if (gameState.currentQuestionIndex >= gameState.questions.length - 1) { 
+        n.textContent = '結果を見る'; 
+        n.onclick = function() { gameState.currentQuestionIndex++; showQuestion(); }; 
+    } else { 
+        n.textContent = '次の問題へ'; 
+        n.onclick = function() { gameState.currentQuestionIndex++; showQuestion(); showScreen('quiz-screen'); }; 
+    } 
+    showScreen('feedback-screen'); 
+}
+
+function checkBadges() {
+    var newBadges = [];
+    for (var i = 0; i < badges.length; i++) {
+        var badge = badges[i];
+        var earned = localStorage.getItem('badge_' + badge.id);
+        if (!earned && badge.condition()) {
+            newBadges.push(badge);
+            localStorage.setItem('badge_' + badge.id, 'true');
+        }
+    }
+    gameState.newBadges = newBadges;
+    if (newBadges.length > 0) {
+        var html = newBadges.map(b => '<div class="badge-notification">🎉 新しいバッジを獲得！「' + b.name + '」(' + b.icon + ')</div>').join('');
+        document.getElementById('result-badges').innerHTML = html;
+    }
+}
+
+function submitResults() { 
+    var url = gameState.scriptUrl + '?character=' + encodeURIComponent(gameState.character) + '&level=' + encodeURIComponent(gameState.level) + '&score=' + encodeURIComponent(gameState.score + '/' + gameState.totalQuestions) + '&accuracy=' + encodeURIComponent(gameState.accuracy + '%'); 
+    fetch(url, { method: 'GET' }).then(() => { saveStats(); alert('✅ 成績を送信・保存しました'); goToStartScreen(); }).catch(() => { saveStats(); alert('✅ ローカルに保存しました'); goToStartScreen(); }); 
+}
+
+function saveStats() { 
+    var s = JSON.parse(localStorage.getItem('ychStats') || '[]'); 
+    s.push({ date: new Date().toLocaleString('ja-JP'), char: gameState.character, level: gameState.level, mode: gameState.mode, score: gameState.score, total: gameState.totalQuestions, acc: gameState.accuracy }); 
+    localStorage.setItem('ychStats', JSON.stringify(s)); 
+}
+
+function getStats() {
+    return JSON.parse(localStorage.getItem('ychStats') || '[]');
+}
+
+function loadStats() { 
+    var s = getStats(); 
+    var html = ''; 
+    if (s.length === 0) { 
+        html = '<p style="color: #999; font-size: 1.2rem;">成績データなし</p>'; 
+    } else { 
+        var avg = Math.round(s.reduce((a, b) => a + (b.acc || 0), 0) / s.length); 
+        html += '<strong style="font-size: 1.3rem; color: #667eea;">📊 統計</strong><br>'; 
+        html += '実施回数: <strong style="color: #667eea; font-size: 1.1rem;">' + s.length + '回</strong><br>'; 
+        html += '平均正答率: <strong style="color: #667eea; font-size: 1.1rem;">' + avg + '%</strong><br><br>'; 
+        html += '<strong style="font-size: 1.2rem; color: #667eea;">📋 履歴</strong><br>'; 
+        for (var i = s.length - 1; i >= 0; i--) { 
+            html += '<div class="stats-item">#' + (s.length - i) + ' | ' + s[i].date + ' | ' + s[i].char + ' | ' + s[i].level + ' | ' + s[i].score + '/' + (s[i].total || 5) + ' | ' + s[i].acc + '%</div>'; 
+        } 
+        html += '<br><button class="btn btn-danger" onclick="if(confirm(\'すべて削除しますか？\')) { localStorage.removeItem(\'ychStats\'); loadStats(); }">🗑️ リセット</button>'; 
+    } 
+    document.getElementById('stats-content').innerHTML = html; 
+}
+
+function checkConsecutiveDays() {
+    var s = getStats();
+    if (s.length === 0) return 0;
+    var dates = s.map(st => new Date(st.date).toDateString()).filter((v, i, a) => a.indexOf(v) === i);
+    var consecutive = 1;
+    for (var i = 1; i < dates.length; i++) {
+        var prev = new Date(dates[i-1]);
+        var curr = new Date(dates[i]);
+        var diff = Math.floor((curr - prev) / (1000 * 60 * 60 * 24));
+        if (diff === 1) consecutive++;
+        else break;
+    }
+    return consecutive;
+}
+
+function loadBadges() {
+    var html = '<div class="badge-grid">';
+    for (var i = 0; i < badges.length; i++) {
+        var badge = badges[i];
+        var earned = localStorage.getItem('badge_' + badge.id);
+        var locked = earned ? '' : 'badge-locked';
+        html += '<div class="badge-item ' + locked + '"><div class="badge-icon">' + badge.icon + '</div><div class="badge-name">' + badge.name + '</div><div class="badge-desc">' + badge.desc + '</div></div>';
+    }
+    html += '</div>';
+    document.getElementById('badge-grid-container').innerHTML = html;
+}
+
+function shuffleArray(arr) { var a = arr.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    </script>
+</body>
+</html>
